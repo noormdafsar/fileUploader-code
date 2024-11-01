@@ -1,4 +1,5 @@
 const File = require('../models/file');
+const cloudinary = require('cloudinary').v2;
 
 const localFileUpload = async (req, res) => {
     try {
@@ -28,19 +29,6 @@ const localFileUpload = async (req, res) => {
         try {
             // Move file to upload directory
             await sampleFile.mv(uploadPath);
-            
-            // Save to database
-            const fileData = await File.create({
-                name: sampleFile.name,
-                path: uploadPath,
-                size: sampleFile.size
-            });
-
-            return res.status(200).json({
-                success: true,
-                message: 'File uploaded successfully',
-                file: fileData
-            });
 
         } catch(moveError) {
             return res.status(500).json({
@@ -59,8 +47,75 @@ const localFileUpload = async (req, res) => {
     }
 }
 
+// const isFileTypesSupported = (type, supportedType) => {
+//     return supportedType.includes(type);
+// }
+
+const imageUpload = async (req, res) => {
+    try {
+
+        // data fetch 
+        const { name, tags, email } = req.body;
+        // console.log({ name, tags, email });
+
+        // Check if file exists(validation check)
+        const sampleFile = req.files.sampleFile;
+        const supportedType = ['png', 'jpeg', 'jpg', 'gif'];
+
+        if(!sampleFile || Object.keys(sampleFile).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file were uploaded',
+            });
+        }
+
+        // Check if file type is supported
+        const fileType = sampleFile.mimetype.split('/')[1];
+        if(!supportedType.includes(fileType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'File type not supported',
+            });
+        }
+
+        // Upload file to cloudinary
+        const uploadImage = await cloudinary.uploader.upload(sampleFile.tempFilePath, {
+            folder: 'Nooruddin',
+            public_id: sampleFile.name,
+            resource_type: 'image',
+        });
+        console.log(uploadImage);
+
+            // Save file to database
+            const newFile = new File({
+                name: sampleFile.name,
+                imageUrl: uploadImage.secure_url,
+                tags: tags,
+                size: sampleFile.size,
+                email: email,
+            });
+
+            await newFile.save();
+
+            return res.status(200).json({
+                success: true,
+                imageUrl: uploadImage.url,
+                message: 'File uploaded successfully',
+                file: newFile,
+            });
+
+    } catch(error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error in file upload process',
+            error: error.message
+        });
+    }
+}
+
+
 module.exports = {
-    localFileUpload,
+    localFileUpload, imageUpload
 }
 
 
