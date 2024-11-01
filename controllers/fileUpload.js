@@ -130,6 +130,14 @@ const videoUpload = async (req, res) => {
             });
         }
 
+        // Check if file size is greater than 10MB
+        if(sampleFile.size > 10000000) {
+            return res.status(400).json({
+                success: false,
+                message: 'File size should not be greater than 10MB',
+            });
+        }
+
         // Check if file type is supported
         const fileType = sampleFile.mimetype.split('/')[1];
         if(!supportedType.includes(fileType)) {
