@@ -113,9 +113,69 @@ const imageUpload = async (req, res) => {
     }
 }
 
+const videoUpload = async (req, res) => {
+    try {
+        // fetch data
+        const { name, tags, email } = req.body;
+        console.log({ name, tags, email });
+
+        // Check if file exists(validation check)
+        const sampleFile = req.files.sampleFile;
+        const supportedType = ['mp4', 'mkv', 'avi', 'mov'];
+
+        if(!sampleFile || Object.keys(sampleFile).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file were uploaded',
+            });
+        }
+
+        // Check if file type is supported
+        const fileType = sampleFile.mimetype.split('/')[1];
+        if(!supportedType.includes(fileType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'File type not supported',
+            });
+        }
+
+        // Upload file to cloudinary
+        const uploadVideo = await cloudinary.uploader.upload(sampleFile.tempFilePath, {
+            folder: 'Nooruddin',
+            public_id: sampleFile.name,
+            resource_type: 'video',
+        });
+        console.log(uploadVideo);
+
+        // Save file to database
+        const newFile = new File({
+            name: sampleFile.name,
+            imageUrl: uploadVideo.secure_url,
+            tags: tags,
+            size: sampleFile.size,
+            email: email,
+        });
+
+        await newFile.save();
+
+        return res.status(200).json({
+            success: true,
+            videoUrl: uploadVideo.secure_url,
+            message: 'video uploaded successfully',
+        })
+    }
+
+    catch(error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error in file upload process',
+            error: error.message
+        });
+    }
+}
 
 module.exports = {
-    localFileUpload, imageUpload
+    localFileUpload, imageUpload, videoUpload
 }
 
 
