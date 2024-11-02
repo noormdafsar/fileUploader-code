@@ -247,10 +247,80 @@ const imageSizeReducer = async (req, res) => {
     }
 }
 
+const videoSizeReducer = async (req, res) => {
+    try {
+        // data fetch 
+        const { name, tags, email } = req.body;
+        console.log({ name, tags, email });
 
+        const sampleFile = req.files.sampleFile;
+
+        // check if file exists
+        const supportedType = ['mp4', 'mkv', 'avi', 'mov'];
+        const fileType = sampleFile.mimetype.split('/')[1];
+
+        if(!supportedType.includes(fileType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'File type not supported',
+            });
+        }
+
+        if(!sampleFile || Object.keys(sampleFile).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file were uploaded',
+            });
+        }
+
+        // Resize video
+        const uploadVideo = await cloudinary.uploader.upload(sampleFile.tempFilePath, {
+            folder: 'Nooruddin',
+            public_id: sampleFile.name,
+            resource_type: 'video',
+            chunk_size: 6000000, // 6MB
+            eager: [
+                { width: 300, height: 300, crop: 'pad', audio_codec: 'none' },
+                { width: 160, height: 100, crop: 'crop', gravity: 'south', audio_codec: 'none' }
+            ],
+            eager_async: true
+            transformation: [
+                { width: 500, height: 500, crop: 'pad', audio_codec: 'none' },
+                { quality: 'auto:low', fetch_format: 'auto' }
+            ],
+        });
+
+        console.log(uploadVideo);
+
+        // Save file to database
+        const newFile = new File({
+            name: sampleFile.name,
+            imageUrl: uploadVideo.secure_url,
+            tags: tags,
+            size: sampleFile.size,
+            email: email,
+        });
+
+        await newFile.save();
+
+        return res.status(200).json({
+            success: true,
+            videoUrl: uploadVideo.url,
+            message: 'Video resized and uploaded successfully',
+            file: newFile,
+        });
+    }
+    catch(error ) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error in file upload and resize video process',
+            error: error.message
+        });
+    }
+}
 
 module.exports = {
-    localFileUpload, imageUpload, videoUpload, imageSizeReducer,
+    localFileUpload, imageUpload, videoUpload, imageSizeReducer, videoSizeReducer,
 }
 
 
