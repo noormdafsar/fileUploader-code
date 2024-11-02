@@ -35,7 +35,7 @@ fileSchema.post('save', async function(doc) {
         console.log('DOCs', doc);
         // transporter imported from conifg/nodemailer.js
         let info = await transporter.sendMail({
-            from: process.env.MAIL_USER,
+            from: 'Ed-tech - Nooruddin',
             to: doc.email,
             subject: 'File uploaded successfully',
             text: 'Your file has been uploaded successfully',
