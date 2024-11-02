@@ -182,8 +182,75 @@ const videoUpload = async (req, res) => {
     }
 }
 
+const imageSizeReducer = async (req, res) => {
+    try {
+        // data fetch 
+        const { name, tags, email } = req.body;
+        console.log({ name, tags, email });
+
+        const sampleFile = req.files.sampleFile;
+
+        // check if file exists
+        const supportedType = ['png', 'jpeg', 'jpg', 'gif'];
+        const fileType = sampleFile.mimetype.split('/')[1];
+
+        if(!supportedType.includes(fileType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'File type not supported',
+            });
+        }
+
+        if(!sampleFile || Object.keys(sampleFile).length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file were uploaded',
+            });
+        }
+
+        // Resize image
+        const uploadImage = await cloudinary.uploader.upload(sampleFile.tempFilePath, {
+            folder: 'Nooruddin',
+            public_id: sampleFile.name,
+            resource_type: 'image',
+            width: 500,
+            height: 500,
+            crop: 'scale',
+            resize: 'fill',
+        });
+
+        // Save file to database
+        const newFile = new File({
+            name: sampleFile.name,
+            imageUrl: uploadImage.secure_url,
+            tags: tags,
+            size: sampleFile.size,
+            email: email,
+        });
+
+        await newFile.save();
+
+        return res.status(200).json({
+            success: true,
+            imageUrl: uploadImage.url,
+            message: 'Image resized and uploaded successfully',
+            file: newFile,
+        });
+
+    }
+    catch(error) {
+        return res.status(500).json({
+            success: false,
+            message: 'Error in file upload and resize photo process',
+            error: error.message
+        });
+    }
+}
+
+
+
 module.exports = {
-    localFileUpload, imageUpload, videoUpload
+    localFileUpload, imageUpload, videoUpload, imageSizeReducer,
 }
 
 
