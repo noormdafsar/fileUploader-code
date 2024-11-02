@@ -283,7 +283,7 @@ const videoSizeReducer = async (req, res) => {
                 { width: 300, height: 300, crop: 'pad', audio_codec: 'none' },
                 { width: 160, height: 100, crop: 'crop', gravity: 'south', audio_codec: 'none' }
             ],
-            eager_async: true
+            eager_async: true,
             transformation: [
                 { width: 500, height: 500, crop: 'pad', audio_codec: 'none' },
                 { quality: 'auto:low', fetch_format: 'auto' }
